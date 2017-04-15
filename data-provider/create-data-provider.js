@@ -1,6 +1,6 @@
 const { findDiscoJsons } = require('../lib/disco-helpers');
 const { downloadFile } = require('../lib/request-helpers');
-const { findFiles } = require('../lib/fs-helpers');
+const { findFiles, writeFile } = require('../lib/fs-helpers');
 const { parseMediaFile } = require('../lib/media-file-helpers');
 
 module.exports = createDataProvider;
@@ -85,11 +85,28 @@ function createDataProvider(musicDir) {
     return dirsMap.get(hash);
   }
 
+  function updateRelease(hash, attrs) {
+    return new Promise((resolve, reject) => {
+      const release = jsonMap.get(hash);
+      const dir = dirsMap.get(hash);
+
+      if (release && dir) {
+        return writeFile(
+          path.join(dir, 'disco.json'),
+          Object.assign(release, attrs)
+        );
+      } else {
+        reject();
+      }
+    });
+  }
+
   return {
     getAllReleases,
     getReleaseCover,
     getRelease,
     getReleaseMediaFiles,
-    getReleaseDir
+    getReleaseDir,
+    updateRelease
   };
 }

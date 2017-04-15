@@ -4,9 +4,7 @@ const path = require('path');
 const internalIp = require('internal-ip');
 const serveMediaFile = require('./serve-media-file');
 const serveImageFile = require('./serve-image');
-const { parseMediaFile } = require('../lib/media-file-helpers');
 const { showInFinder } = require('../lib/shell-helpers');
-const { findFiles, writeFile } = require('../lib/fs-helpers');
 const createDataProvider = require('../data-provider/create-data-provider');
 
 module.exports = startApiServer;
@@ -17,7 +15,8 @@ function startApiServer(port, musicDir) {
     getReleaseCover,
     getRelease,
     getReleaseMediaFiles,
-    getReleaseDir
+    getReleaseDir,
+    updateRelease
   } = createDataProvider(musicDir);
 
   const server = restify.createServer();
@@ -62,16 +61,16 @@ function startApiServer(port, musicDir) {
   });
 
   server.get('/disco/:hash/like', (req, res) => {
-    const {hash} = req.params;
+    const { hash } = req.params;
+    const release = getRelease(hash);
+    const send = (code) => res.send(code, {});
 
-    const discoJson = jsonMap.get(hash);
-    discoJson.liked = !discoJson.liked;
-
-    console.log(`Liked - Saving disco.json to ${dirsMap.get(hash)}`);
-
-    writeFile(path.join(dirsMap.get(hash), 'disco.json'), discoJson)
-      .then(() => res.send(200, {}))
-      .catch(() => res.send(404, {}));
+    if (release) {
+      updateRelease(hash, { liked: !release.liked })
+        .then(send(200), send(404));
+    } else {
+      send(404);
+    }
   });
 
   server.get('/disco/:hash/files', (req, res) => {
