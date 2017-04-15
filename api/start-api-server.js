@@ -146,13 +146,7 @@ function startApiServer(port, musicDir) {
   }
 }
 
-function sendImage(res, imageFile) {
-  readFile(imageFile, 'binary').then((imageData) => {
-    res.writeHead(200, {
-      'Content-Type': path.extname(imageFile) === 'png' ? 'image/png' : 'image/jpeg'
-    });
-    res.end(new Buffer(imageData, 'binary'));
-  });
+  server.listen(port, () => console.log(`disco server listening at ${port}`));
 }
 
 function getStreamId(hash, fileIndex) {
