@@ -1,22 +1,24 @@
-module.exports = startApiServer;
-
 const mime = require('mime');
 const restify = require('restify');
 const path = require('path');
 const internalIp = require('internal-ip');
 const serveMediaFile = require('./serve-media-file');
+const serveImageFile = require('./serve-image');
 const { parseMediaFile } = require('../lib/media-file-helpers');
-const { findDiscoJsons } = require('../lib/disco-helpers');
-const { downloadFile } = require('../lib/request-helpers');
-const { showInFinder, playInVox } = require('../lib/shell-helpers');
-const { readFile, findFiles, writeFile } = require('../lib/fs-helpers');
+const { showInFinder } = require('../lib/shell-helpers');
+const { findFiles, writeFile } = require('../lib/fs-helpers');
+const createDataProvider = require('../data-provider/create-data-provider');
+
+module.exports = startApiServer;
 
 function startApiServer(port, musicDir) {
-  const dirsMap = new Map();  // hash -> dir
-  const jsonMap = new Map();  // hash -> disco json
-  const mediaMap = new Map(); // hash -> array of media files
-
-  const whatcdDupes = [];
+  const {
+    getAllReleases,
+    getReleaseCover,
+    getRelease,
+    getReleaseMediaFiles,
+    getReleaseDir
+  } = createDataProvider(musicDir);
 
   const server = restify.createServer();
   const hostname = `http://${internalIp()}:${port}`;
@@ -24,53 +26,33 @@ function startApiServer(port, musicDir) {
   server.use(restify.CORS());
 
   server.get('/disco/all', (req, res) => {
-    findDiscoJsons(musicDir)
-      .then((items) => {
-        console.log('items found:', items.length);
-        items
-          .forEach(({ dirname, json }) => {
-            json.artwork_url = `${hostname}/cover/${json.torrentHash}`;
-
-            if (!dirsMap.has(json.torrentHash)) {
-              dirsMap.set(json.torrentHash, dirname);
-              jsonMap.set(json.torrentHash, json);
-            } else if (dirname.indexOf('whatcd') > -1) {
-              whatcdDupes.push(json.torrentHash);
-            } else {
-              dirsMap.set(json.torrentHash, dirname);
-              jsonMap.set(json.torrentHash, json);
-            }
-          });
-
-        console.log('The number of whatcdDupes', whatcdDupes);
-
-        res.send(200, items.map(({ json }) => json));
-      });
+    getAllReleases()
+      .then(
+        (items) => res.send(200, items),
+        (items) => res.send(200, [])
+      );
   });
 
   server.get('/cover/:hash', (req, res) => {
-    const { hash } = req.params;
-    const dir = dirsMap.get(hash);
-    const imageUrl = jsonMap.get(hash) && jsonMap.get(hash).image;
+    getReleaseCover(req.params.hash)
+      .then(
+        (coverFile) => serveImageFile(req, res, coverFile),
+        () => res.send(404)
+      );
+  });
 
-    const sendCover = (coverFile) => sendImage(res, coverFile);
-    const sendNotFound = () => res.send(404);
+  server.get('/disco/:hash', (req, res) => {
+    const release = getRelease(req.params.hash);
 
-    findFiles('@(cover.jpg|cover.png|folder.jpg|folder.png)', dir)
-      .then(([coverFile]) => {
-        if (coverFile) {
-          sendCover(coverFile)
-        } else if (imageUrl) {
-          const downloadTo = path.join(dir, 'cover.jpg');
-          downloadFile(imageUrl, downloadTo).then(sendCover, sendNotFound);
-        } else {
-          sendNotFound();
-        }
-      });
+    if (release) {
+      res.send(200, release);
+    } else {
+      res.send(404);
+    }
   });
 
   server.get('/disco/:hash/open', (req, res) => {
-    const dir = dirsMap.get(req.params.hash);
+    const dir = getReleaseDir(req.params.hash);
 
     if (dir) {
       showInFinder(dir).then(() => res.send(200, {}));
@@ -80,7 +62,7 @@ function startApiServer(port, musicDir) {
   });
 
   server.get('/disco/:hash/like', (req, res) => {
-    const { hash } = req.params;
+    const {hash} = req.params;
 
     const discoJson = jsonMap.get(hash);
     discoJson.liked = !discoJson.liked;
@@ -93,67 +75,47 @@ function startApiServer(port, musicDir) {
   });
 
   server.get('/disco/:hash/files', (req, res) => {
-    const hash = req.params.hash;
-    const dir = dirsMap.get(hash);
+    const { hash } = req.params;
 
-    Promise.resolve(
-      mediaMap.get(hash) ||
-      findMediaFiles(dir, hash).then((mediaFiles) => {
-        mediaMap.set(hash, mediaFiles);
-        console.log('media files', mediaFiles);
-        return mediaFiles;
-      })
-    )
-    .then((mediaFiles) => res.send(200, mediaFiles))
-    .catch(() => res.send(404, []));
+    getReleaseMediaFiles(hash)
+      .then(
+        (metadata) => {
+          res.send(200, metadata.map((item, index) => Object.assign({}, item, {
+              streamUrl: `${hostname}/disco/stream/${getStreamId(hash, index)}`,
+              coverUrl: `${hostname}/cover/${hash}`
+            })
+          ));
+        },
+        () => res.send(404, [])
+      )
   });
 
   server.get('/disco/stream/:streamId', (req, res) => {
-    const { index, hash } = getMediaFileData(req.params.streamId);
-    const mediaFIlePath = mediaMap.get(hash) && mediaMap.get(hash)[index] && mediaMap.get(hash)[index].path;
+    const {index, hash} = getMediaFileDescriptor(req.params.streamId);
 
-    console.log('stream route', req.params.streamId);
+    getReleaseMediaFiles(hash)
+      .then(
+        (metadata) => {
+          const fileMetadata = metadata[index];
 
-    if (mediaFIlePath) {
-      serveMediaFile(req, res, mediaFIlePath);
-    } else {
-      res.send(404);
-    }
+          if (fileMetadata && fileMetadata.path) {
+            serveMediaFile(req, res, fileMetadata.path);
+          } else {
+            res.send(404);
+          }
+        },
+        () => res.send(404)
+      );
   });
-
-  server.listen(port, () => {
-    console.log(`disco server listening at ${port}`);
-  });
-
-  function findMediaFiles(dirPath, hash) {
-    return findFiles('**/@(*.flac|*.mp3)', dirPath)
-      .then((mediaFilesPaths) => {
-        return Promise.all(mediaFilesPaths.sort().map((filePath) => parseMediaFile(filePath)))
-          .then(metadata => {
-            return metadata.map(({ title, artist, mimeType, duration }, index) => {
-              return {
-                artist,
-                title,
-                mimeType,
-                duration,
-                path: mediaFilesPaths[index],
-                streamUrl: `${hostname}/disco/stream/${getStreamId(hash, index)}`,
-                coverUrl: `${hostname}/cover/${hash}`
-              };
-            });
-          })
-      });
-  }
-}
 
   server.listen(port, () => console.log(`disco server listening at ${port}`));
 }
 
-function getStreamId(hash, fileIndex) {
-  return `${hash}__${fileIndex}`;
+function getStreamId(hash, index) {
+  return `${hash}__${index}`;
 }
 
-function getMediaFileData(streamId) {
+function getMediaFileDescriptor(streamId) {
   const [ hash, index ] = streamId.split('__');
 
   return { hash, index };
