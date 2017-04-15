@@ -1,5 +1,6 @@
 {
   "name": "discolab",
+  "version": "0.0.1",
   "dependencies": {
     "dotenv": "4.0.0",
     "flac-parser": "0.3.1",
