@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rsync -arv --exclude=/Users/sasha/dev/disco/node_modules /Users/sasha/dev/disco subkid@chili.whatbox.ca:/home/subkid/
+
+

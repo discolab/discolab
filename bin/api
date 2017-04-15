@@ -1,0 +1,14 @@
+#!/usr/bin/env node
+
+const { load: loadEnv } = require('dotenv');
+const path = require('path');
+const startApiServer = require('../api/start-api-server');
+
+loadEnv({
+  path: path.join(__dirname, '../.env')
+});
+
+startApiServer(
+  process.env.DISCOBOX_SERVER_PORT,
+  process.env.MUSIC_LIB
+);

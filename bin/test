@@ -1,0 +1,84 @@
+#!/usr/bin/env node
+
+const Table = require('cli-table');
+
+calculate({
+  Waldpark: {
+    total: 130000,
+    sonderTilgung: 0,
+    zinsSatz: 2,
+    annulitat: 13850,
+    years: 10
+  },
+  Hypotheke: {
+    total: 330000,
+    sonderTilgung: 5000,
+    zinsSatz: 1.70,
+    annulitat: 13850,
+    years: 10
+  },
+  KfW_55: {
+    total: 100000,
+    sonderTilgung: 0,
+    zinsSatz: 0.75,
+    annulitat: 3750,
+    years: 10
+  }
+});
+
+function calculate(config) {
+  Object.keys(config).forEach((name, index) => {
+    printLoan(name, config[name]);
+    console.log('');
+  });
+}
+
+function printLoan(name, config, detailedView = false) {
+  const {
+    total,
+    sonderTilgung,
+    zinsSatz,
+    annulitat,
+    years
+  } = config;
+
+  const table = new Table({
+    head: ["Jahr", "Darlehen", "Zinsen", "Tilgung", "Sondertilgung"]
+  });
+
+  let darlehen = total;
+  let totalZinsenPaid = 0;
+  let totalTilgungPaid = 0;
+  const jahrlicheSonderTilgung = Math.min(sonderTilgung, total * 0.05);
+  const monthlyPayment = Math.round((jahrlicheSonderTilgung + annulitat) / 12);
+
+  for (let year = 0; year < years; year++) {
+    const zinsenPaid = Math.round(darlehen * zinsSatz / 100);
+    const tilgungPaid = Math.round(annulitat - zinsenPaid);
+
+    table.push([
+      year +1,
+      darlehen,
+      zinsenPaid,
+      tilgungPaid,
+      jahrlicheSonderTilgung
+    ]);
+
+    darlehen -= tilgungPaid + jahrlicheSonderTilgung;
+    totalZinsenPaid += zinsenPaid;
+    totalTilgungPaid += tilgungPaid + jahrlicheSonderTilgung;
+  }
+
+  console.log('--------------------------------------');
+  console.log(`${name}: ${total} EUR, ${years} years, ${zinsSatz}%`);
+  console.log('--------------------------------------');
+  console.log(`Monthly payment: ${monthlyPayment}`);
+  console.log(`Left to pay: ${darlehen}`);
+  if (detailedView) {
+    console.log(table.toString());
+  } else {
+    console.log(`Sondertilgung: ${jahrlicheSonderTilgung}`);
+    console.log(`Tilgung paid: ${totalTilgungPaid}`);
+    console.log(`Zinsen paid: ${totalZinsenPaid}`);
+  }
+}

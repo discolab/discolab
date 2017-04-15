@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+const path = require('path');
+const optimist = require('optimist');
+
+const { writeDiscoJson } = require('../lib/disco-helpers');
+const { getTorrentData, getReleaseData } = require('../lib/whatcd-helpers');
+const { writeFile } = require('../lib/fs-helpers');
+const { allSettled } = require('../lib/promise-helpers');
+const { getTorrentHashes } = require('../lib/torrent-helpers');
+
+const defaultOptions = { dir : null, hash : null };
+const { dir, hash } = optimist.default(defaultOptions).argv;
+
+if (!hash && !dir) {
+  optimist.showHelp();
+  exit();
+}
+
+if (hash && dir) {
+  getTorrentData({ hash })
+    .then((torrentData) => writeFile(path.join(dir, 'disco.json'), getReleaseData(torrentData)))
+    .then(exit);
+} else {
+  (hash ? Promise.resolve([hash]) : getTorrentHashes(dir))
+    .then((hashes) => allSettled(hashes.map(writeDiscoJson)))
+    .then(exit);
+}
+
+function exit() {
+  process.exit(0);
+}
