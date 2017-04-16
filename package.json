@@ -2,6 +2,7 @@
   "name": "discolab",
   "version": "0.0.1",
   "dependencies": {
+    "commander": "2.9.0",
     "debug": "2.6.3",
     "dotenv": "4.0.0",
     "flac-parser": "0.3.1",

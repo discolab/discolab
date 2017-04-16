@@ -1,31 +1,44 @@
 #!/usr/bin/env node
+const { load: loadEnv } = require('dotenv');
 const path = require('path');
-const optimist = require('optimist');
-
+const program = require('commander');
+const startApiServer = require('../api/start-api-server');
 const { writeDiscoJson } = require('../lib/disco-helpers');
-const { getTorrentData, getReleaseData } = require('../lib/whatcd-helpers');
-const { writeFile } = require('../lib/fs-helpers');
 const { allSettled } = require('../lib/promise-helpers');
 const { getTorrentHashes } = require('../lib/torrent-helpers');
+const { executeCmd } = require('../lib/shell-helpers');
 
-const defaultOptions = { dir : null, hash : null };
-const { dir, hash } = optimist.default(defaultOptions).argv;
+const runCommand = (fn) => (...args) => {
+  loadEnv({ path: path.join(__dirname, '../.env') });
+  fn(...args);
+};
 
-if (!hash && !dir) {
-  optimist.showHelp();
-  exit();
-}
+program
+  .version(require('../package.json').version);
 
-if (hash && dir) {
-  getTorrentData({ hash })
-    .then((torrentData) => writeFile(path.join(dir, 'disco.json'), getReleaseData(torrentData)))
-    .then(exit);
-} else {
-  (hash ? Promise.resolve([hash]) : getTorrentHashes(dir))
-    .then((hashes) => allSettled(hashes.map(writeDiscoJson)))
-    .then(exit);
-}
+program
+  .command('api')
+  .description('start disco media/restful server')
+  .action(runCommand(() => {
+    startApiServer(
+      process.env.DISCOBOX_SERVER_PORT,
+      process.env.MUSIC_LIB
+    );
+  }));
 
-function exit() {
-  process.exit(0);
-}
+program
+  .command('json <dir>')
+  .description('generate disco.json files for new torrents')
+  .action(runCommand((dir) => {
+    getTorrentHashes(dir)
+      .then((hashes) => allSettled(hashes.map(writeDiscoJson)))
+  }));
+
+program
+  .command('sync')
+  .description('uploads working copy of this repo to seedbox')
+  .action(() => {
+    executeCmd('rsync -arv --exclude=/Users/sasha/dev/discolab/discolab/node_modules /Users/sasha/dev/discolab/discolab subkid@chili.whatbox.ca:/home/subkid/')
+  });
+
+program.parse(process.argv);
