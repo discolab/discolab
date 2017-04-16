@@ -1,7 +1,9 @@
+const path = require('path');
 const { findDiscoJsons } = require('../lib/disco-helpers');
 const { downloadFile } = require('../lib/request-helpers');
 const { findFiles, writeFile } = require('../lib/fs-helpers');
 const { parseMediaFile } = require('../lib/media-file-helpers');
+const { log } = require('../lib/logger');
 
 module.exports = createDataProvider;
 
@@ -71,7 +73,7 @@ function createDataProvider(musicDir) {
                    path: mediaFilesPaths[index]
                  }))
                );
-               console.log(mediaMap.get(hash))
+               log(mediaMap.get(hash));
                resolve(mediaMap.get(hash));
              });
            });
