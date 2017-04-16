@@ -1,6 +1,9 @@
 {
   "name": "discolab",
   "version": "0.0.2",
+  "bin": {
+    "discolab": "bin/disco"
+  },
   "dependencies": {
     "commander": "2.9.0",
     "debug": "2.6.3",
