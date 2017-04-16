@@ -27,16 +27,8 @@ function startApiServer(port, musicDir) {
   server.get('/disco/all', (req, res) => {
     getAllReleases()
       .then(
-        (items) => res.send(200, items),
+        (items) => res.send(200, items.map(addArtworkUrl)),
         (items) => res.send(200, [])
-      );
-  });
-
-  server.get('/cover/:hash', (req, res) => {
-    getReleaseCover(req.params.hash)
-      .then(
-        (coverFile) => serveImageFile(req, res, coverFile),
-        () => res.send(404)
       );
   });
 
@@ -44,7 +36,7 @@ function startApiServer(port, musicDir) {
     const release = getRelease(req.params.hash);
 
     if (release) {
-      res.send(200, release);
+      res.send(200, addArtworkUrl(release));
     } else {
       res.send(404);
     }
@@ -80,8 +72,8 @@ function startApiServer(port, musicDir) {
       .then(
         (metadata) => {
           res.send(200, metadata.map((item, index) => Object.assign({}, item, {
-              streamUrl: `${hostname}/disco/stream/${getStreamId(hash, index)}`,
-              coverUrl: `${hostname}/cover/${hash}`
+              streamUrl: getStreamUrl(hash, index),
+              coverUrl: getArtworkUrl(hash)
             })
           ));
         },
@@ -89,7 +81,15 @@ function startApiServer(port, musicDir) {
       )
   });
 
-  server.get('/disco/stream/:streamId', (req, res) => {
+  server.get('/cover/:hash', (req, res) => {
+    getReleaseCover(req.params.hash)
+      .then(
+        (coverFile) => serveImageFile(req, res, coverFile),
+        () => res.send(404)
+      );
+  });
+
+  server.get('/stream/:streamId', (req, res) => {
     const {index, hash} = getMediaFileDescriptor(req.params.streamId);
 
     getReleaseMediaFiles(hash)
@@ -108,14 +108,28 @@ function startApiServer(port, musicDir) {
   });
 
   server.listen(port, () => console.log(`disco server listening at ${port}`));
-}
 
-function getStreamId(hash, index) {
-  return `${hash}__${index}`;
-}
+  function addArtworkUrl(release) {
+    return Object.assign({}, release, {
+      artworkUrl: getArtworkUrl(release.torrentHash)
+    });
+  }
 
-function getMediaFileDescriptor(streamId) {
-  const [ hash, index ] = streamId.split('__');
+  function getArtworkUrl(hash) {
+    return `${hostname}/cover/${hash}`;
+  }
 
-  return { hash, index };
+  function getStreamUrl(hash, index) {
+    return `${hostname}/stream/${getStreamId(hash, index)}`;
+  }
+
+  function getStreamId(hash, index) {
+    return `${hash}__${index}`;
+  }
+
+  function getMediaFileDescriptor(streamId) {
+    const [ hash, index ] = streamId.split('__');
+
+    return { hash, index };
+  }
 }
