@@ -34,11 +34,4 @@ program
       .then((hashes) => allSettled(hashes.map(writeDiscoJson)))
   }));
 
-program
-  .command('sync')
-  .description('uploads working copy of this repo to seedbox')
-  .action(() => {
-    executeCmd('rsync -arv --exclude=/Users/sasha/dev/discolab/discolab/node_modules /Users/sasha/dev/discolab/discolab subkid@chili.whatbox.ca:/home/subkid/')
-  });
-
 program.parse(process.argv);
