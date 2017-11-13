@@ -62,8 +62,11 @@ function createDataProvider(musicDir) {
   function getReleaseMediaFiles(hash) {
     return new Promise((resolve, reject) => {
        const releaseDir = dirsMap.get(hash);
+       const mediaFiles = mediaMap.get(hash);
 
-       if (releaseDir) {
+       if (mediaFiles && mediaFiles.length) {
+         resolve(mediaFiles);
+       } else if (releaseDir) {
          findFiles('**/@(*.flac|*.mp3)', releaseDir)
            .then((mediaFilesPaths) => {
              return Promise.all(
@@ -77,7 +80,6 @@ function createDataProvider(musicDir) {
                    path: mediaFilesPaths[index]
                  }))
                );
-               log(mediaMap.get(hash));
                resolve(mediaMap.get(hash));
              });
            });
