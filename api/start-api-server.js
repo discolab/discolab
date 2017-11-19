@@ -112,6 +112,11 @@ function startApiServer(port, musicDir) {
 
   server.listen(port, () => console.log(`disco server listening at ${port}`));
 
+  server.on('pre', (req, res) => {
+    console.log(`incoming request - ${req.method} - ${req.url}}`);
+    console.log(req.headers);
+  });
+
   function addArtworkUrl(release) {
     return Object.assign({}, release, {
       artworkUrl: getArtworkUrl(release.torrentHash)
