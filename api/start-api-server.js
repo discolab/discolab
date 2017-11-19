@@ -19,7 +19,10 @@ function startApiServer(port, musicDir) {
     updateRelease
   } = createDataProvider(musicDir);
 
-  const server = restify.createServer();
+  const server = restify.createServer({
+    name: 'discolab',
+    version: require('../package.json').version
+  });
   const hostname = `http://${internalIp()}:${port}`;
 
   server.use(restify.CORS());
