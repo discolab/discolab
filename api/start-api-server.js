@@ -110,12 +110,12 @@ function startApiServer(port, musicDir) {
       );
   });
 
-  server.listen(port, () => console.log(`disco server listening at ${port}`));
-
   server.on('pre', (req, res) => {
     console.log(`incoming request - ${req.method} - ${req.url}}`);
     console.log(req.headers);
   });
+
+  server.listen(port, () => console.log(`disco server listening at ${port}`));
 
   function addArtworkUrl(release) {
     return Object.assign({}, release, {
