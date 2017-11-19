@@ -1,5 +1,6 @@
 const mime = require('mime');
 const restify = require('restify');
+const corsMiddleware = require('restify-cors-middleware');
 const path = require('path');
 const internalIp = require('internal-ip');
 const serveMediaFile = require('./serve-media-file');
@@ -25,7 +26,9 @@ function startApiServer(port, musicDir) {
   });
   const hostname = `http://${internalIp()}:${port}`;
 
-  server.use(restify.CORS());
+  const { preflight, actual } = corsMiddleware({ origins: ['*'] });
+  server.pre(preflight);
+  server.use(actual);
 
   server.get('/disco/all', (req, res) => {
     getAllReleases()
