@@ -1,6 +1,6 @@
 {
   "name": "discolab",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "bin": {
     "discolab": "bin/disco"
   },
