@@ -33,15 +33,16 @@ function createDataProvider(musicDir) {
   }
 
   function getReleaseCover(hash) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const releaseDir = dirsMap.get(hash);
       const imageUrl = jsonMap.get(hash) && jsonMap.get(hash).image;
+      const reject = () => resolve('');
 
       if (releaseDir) {
         findFiles('@(cover.jpg|cover.png|folder.jpg|folder.png)', releaseDir)
-          .then(([coverFile]) => {
-            if (coverFile) {
-              resolve(coverFile);
+          .then(([coverFilePath]) => {
+            if (coverFilePath) {
+              resolve(coverFilePath);
             } else if (imageUrl) {
               const downloadTo = path.join(releaseDir, 'cover.jpg');
               downloadFile(imageUrl, downloadTo).then(resolve, reject);
