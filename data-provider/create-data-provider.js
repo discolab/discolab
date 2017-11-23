@@ -11,6 +11,7 @@ function createDataProvider(musicDir) {
   const dirsMap  = new Map();  // hash -> release dir
   const jsonMap  = new Map();  // hash -> disco json
   const mediaMap = new Map();  // hash -> array of media files metadata
+  const coversMap = new Map(); // hash -> file path of artwork image
 
   function getAllReleases() {
     return (jsonMap.size ?
@@ -34,24 +35,29 @@ function createDataProvider(musicDir) {
 
   function getReleaseCover(hash) {
     return new Promise((resolve) => {
-      const releaseDir = dirsMap.get(hash);
-      const imageUrl = jsonMap.get(hash) && jsonMap.get(hash).image;
-      const reject = () => resolve('');
-
-      if (releaseDir) {
-        findFiles('@(cover.jpg|cover.png|folder.jpg|folder.png)', releaseDir)
-          .then(([coverFilePath]) => {
-            if (coverFilePath) {
-              resolve(coverFilePath);
-            } else if (imageUrl) {
-              const downloadTo = path.join(releaseDir, 'cover.jpg');
-              downloadFile(imageUrl, downloadTo).then(resolve, reject);
-            } else {
-              reject();
-            }
-          });
+      if (coversMap.has(hash)) {
+        resolve(coversMap.get(hash));
       } else {
-        reject();
+        const releaseDir = dirsMap.get(hash);
+        const imageUrl = jsonMap.get(hash) && jsonMap.get(hash).image;
+        const reject = () => resolve('');
+
+        if (releaseDir) {
+          findFiles('@(cover.jpg|cover.png|folder.jpg|folder.png)', releaseDir)
+            .then(([coverFilePath]) => {
+              if (coverFilePath) {
+                coversMap.set(hash, coverFilePath);
+                resolve(coverFilePath);
+              } else if (imageUrl) {
+                const downloadTo = path.join(releaseDir, 'cover.jpg');
+                downloadFile(imageUrl, downloadTo).then(resolve, reject);
+              } else {
+                reject();
+              }
+            });
+        } else {
+          reject();
+        }
       }
     });
   }
