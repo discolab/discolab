@@ -15,11 +15,11 @@ function serveMediaFile(req, res, filePath) {
 
   if (range) {
     const { start, end } = rangeParser(size, range)[0];
-    const chunksize = end - start + 1;
+    const chunkSize = end - start + 1;
 
     res.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
     res.setHeader('Accept-Ranges', 'bytes');
-    res.setHeader('Content-Length', chunksize);
+    res.setHeader('Content-Length', chunkSize);
     res.statusCode = 206;
 
     return fs.createReadStream(filePath, { start, end }).pipe(res);
