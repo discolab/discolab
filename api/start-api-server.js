@@ -87,11 +87,12 @@ function startApiServer(port, musicDir) {
       )
   });
 
-  server.get('/cover/:hash', (req, res) => {
-    getReleaseCover(req.params.hash)
+  server.get('/cover/:hash/:size', (req, res) => {
+    const { hash, size } = req.params;
+
+    getReleaseCover(hash)
       .then(
-        (coverFile) => serveImageFile(req, res, coverFile),
-        () => res.send(404)
+        (coverFilePath) => serveImageFile(req, res, coverFilePath, parseInt(size, 10))
       );
   });
 
@@ -114,7 +115,7 @@ function startApiServer(port, musicDir) {
   });
 
   server.on('pre', (req, res) => {
-    console.log(`incoming request - ${req.method} - ${req.url}}`);
+    console.log(`incoming request - ${req.method} - ${req.url}`);
     console.log(req.headers);
   });
 
@@ -126,8 +127,8 @@ function startApiServer(port, musicDir) {
     });
   }
 
-  function getArtworkUrl(hash) {
-    return `${hostname}/cover/${hash}`;
+  function getArtworkUrl(hash, size = 600) {
+    return `${hostname}/cover/${hash}/${size}`;
   }
 
   function getStreamUrl(hash, index) {
