@@ -7,6 +7,7 @@ const serveMediaFile = require('./serve-media-file');
 const serveImageFile = require('./serve-image');
 const { showInFinder } = require('../lib/shell-helpers');
 const createDataProvider = require('../data-provider/create-data-provider');
+const { log } = require('../lib/logger');
 
 module.exports = startApiServer;
 
@@ -114,12 +115,9 @@ function startApiServer(port, musicDir) {
       );
   });
 
-  server.on('pre', (req, res) => {
-    console.log(`incoming request - ${req.method} - ${req.url}`);
-    console.log(req.headers);
-  });
+  server.on('pre', (req) => log(`${req.method} - ${req.url}`));
 
-  server.listen(port, () => console.log(`disco server listening at ${port}`));
+  server.listen(port, () => log(`API server listening at ${port}`));
 
   function addArtworkUrl(release) {
     return Object.assign({}, release, {
