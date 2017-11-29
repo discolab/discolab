@@ -106,9 +106,18 @@ function createDataProvider(musicDir) {
       const dir = dirsMap.get(hash);
 
       if (release && dir) {
-        return writeFile(
+        writeFile(
           path.join(dir, 'disco.json'),
           Object.assign(release, attrs)
+        ).then(
+          () => {
+            log(`disco.json for ${hash} has been updated`);
+            resolve();
+          },
+          () => {
+            log(`failed to update disco.json for ${hash}`);
+            reject();
+          }
         );
       } else {
         reject();

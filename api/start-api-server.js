@@ -62,7 +62,7 @@ function startApiServer(port, musicDir) {
   server.get('/disco/:hash/like', (req, res) => {
     const { hash } = req.params;
     const release = getRelease(hash);
-    const send = (code) => res.send(code, {});
+    const send = (code) => () => res.send(code, {});
 
     if (release) {
       updateRelease(hash, { liked: !release.liked })
