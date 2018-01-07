@@ -5,6 +5,7 @@ const program = require('commander');
 const startApiServer = require('../api/start-api-server');
 const { writeDiscoJson } = require('../lib/disco-helpers');
 const { allSettled } = require('../lib/promise-helpers');
+const { getReleaseData } = require('../lib/discogs-helpers');
 const { getTorrentHashes } = require('../lib/torrent-helpers');
 const { executeCmd } = require('../lib/shell-helpers');
 
@@ -16,22 +17,37 @@ const runCommand = (fn) => (...args) => {
 program
   .version(require('../package.json').version);
 
-program
-  .command('api')
-  .description('start disco media/restful server')
-  .action(runCommand(() => {
-    startApiServer(
+[
+  {
+    name: 'api',
+    description: 'Start disco media/restful server',
+    command: () => startApiServer(
       process.env.DISCOBOX_SERVER_PORT,
       process.env.MUSIC_LIB
-    );
-  }));
-
-program
-  .command('json <dir>')
-  .description('generate disco.json files for new torrents')
-  .action(runCommand((dir) => {
-    getTorrentHashes(dir)
-      .then((hashes) => allSettled(hashes.map(writeDiscoJson)))
-  }));
+    )
+  },
+  {
+    name: 'json <dir>',
+    description: 'Generate disco.json files for new torrents\'',
+    command: (dir) =>
+      getTorrentHashes(dir)
+        .then((hashes) => allSettled(
+          hashes.map((hash) => writeDiscoJson({ hash })))
+        )
+  },
+  {
+    name: 'discogs <discogs_id>',
+    description: 'Create disco.json file based on meta information retrieved from Discogs API',
+    command: (discogsId) => writeDiscoJson({ discogsId })
+  }
+].forEach(
+  ({ name, description, command }) =>
+    program
+      .command(name)
+      .description(description)
+      .action(runCommand(command))
+);
 
 program.parse(process.argv);
+
+
