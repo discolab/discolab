@@ -7,6 +7,7 @@
   "dependencies": {
     "commander": "2.9.0",
     "debug": "2.6.3",
+    "disconnect": "1.2.1",
     "dotenv": "4.0.0",
     "flac-parser": "0.3.1",
     "glob": "7.0.3",
