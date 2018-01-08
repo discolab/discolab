@@ -5,9 +5,7 @@ const program = require('commander');
 const startApiServer = require('../api/start-api-server');
 const { writeDiscoJson } = require('../lib/disco-helpers');
 const { allSettled } = require('../lib/promise-helpers');
-const { getReleaseData } = require('../lib/discogs-helpers');
 const { getTorrentHashes } = require('../lib/torrent-helpers');
-const { executeCmd } = require('../lib/shell-helpers');
 
 const runCommand = (fn) => (...args) => {
   loadEnv({ path: path.join(__dirname, '../.env') });
