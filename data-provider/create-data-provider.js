@@ -1,6 +1,5 @@
 const path = require('path');
-const { findDiscoJsons } = require('../lib/disco-helpers');
-const { downloadFile } = require('../lib/request-helpers');
+const { findDiscoJsons, findCovers } = require('../lib/disco-helpers');
 const { findFiles, writeFile } = require('../lib/fs-helpers');
 const { parseMediaFile } = require('../lib/media-file-helpers');
 const { log } = require('../lib/logger');
@@ -39,19 +38,15 @@ function createDataProvider(musicDir) {
         resolve(coversMap.get(hash));
       } else {
         const releaseDir = dirsMap.get(hash);
-        const imageUrl = jsonMap.get(hash) && jsonMap.get(hash).image;
         const reject = () => resolve('');
 
         if (releaseDir) {
-          findFiles('@(cover.jpg|cover.png|folder.jpg|folder.png)', releaseDir)
+          findCovers(releaseDir)
             .then(([coverFilePath]) => {
               if (coverFilePath) {
                 coversMap.set(hash, coverFilePath);
                 resolve(coverFilePath);
-              } else if (imageUrl) {
-                const downloadTo = path.join(releaseDir, 'cover.jpg');
-                downloadFile(imageUrl, downloadTo).then(resolve, reject);
-              } else {
+              } {
                 reject();
               }
             });
