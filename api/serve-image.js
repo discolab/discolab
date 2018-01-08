@@ -7,27 +7,29 @@ module.exports = serveImage;
 function serveImage(req, res, imageFilePath, size) {
   fs.exists(imageFilePath, (exists) => {
      if (exists) {
-       res.statusCode = 200;
-       res.setHeader('Content-Type', mime.lookup(imageFilePath));
-
-       const image = sharp(imageFilePath);
-       const readStream = fs.createReadStream(imageFilePath);
-       const streamSourceImage = () => readStream.pipe(res);
-
-       image.metadata().then(
+       sharp(imageFilePath).metadata().then(
          ({ width }) => {
+           res.statusCode = 200;
+           res.setHeader('Content-Type', mime.lookup(imageFilePath));
+
            if (width <= size) {
-             return streamSourceImage();
+             return fs.createReadStream(imageFilePath).pipe(res);
            } else {
-             return readStream
-               .pipe(sharp().resize(Math.round(size)))
-               .pipe(res);
+             return resizeImage(imageFilePath, size).pipe(res);
            }
          },
-         () => streamSourceImage()
+         () => res.send(500)
        );
-     } else {
+    } else {
        return res.send(404);
      }
   });
 }
+
+function resizeImage(imageFilePath, size) {
+  return fs.createReadStream(imageFilePath)
+    .pipe(
+      sharp().resize(Math.round(size))
+    );
+}
+
