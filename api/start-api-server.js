@@ -5,7 +5,6 @@ const path = require('path');
 const internalIp = require('internal-ip');
 const serveMediaFile = require('./serve-media-file');
 const serveImageFile = require('./serve-image');
-const { showInFinder } = require('../lib/shell-helpers');
 const createDataProvider = require('../data-provider/create-data-provider');
 const { log } = require('../lib/logger');
 
@@ -44,16 +43,6 @@ function startApiServer(port, musicDir) {
 
     if (release) {
       res.send(200, addArtworkUrl(release));
-    } else {
-      res.send(404);
-    }
-  });
-
-  server.get('/disco/:hash/open', (req, res) => {
-    const dir = getReleaseDir(req.params.hash);
-
-    if (dir) {
-      showInFinder(dir).then(() => res.send(200, {}));
     } else {
       res.send(404);
     }
