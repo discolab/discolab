@@ -28,10 +28,6 @@ function createDataProvider(musicDir) {
     );
   }
 
-  function getReleases(hashes) {
-    return hashes.map(getRelease);
-  }
-
   function getReleaseCover(hash) {
     return new Promise((resolve) => {
       if (coversMap.has(hash)) {
@@ -124,7 +120,6 @@ function createDataProvider(musicDir) {
     getAllReleases,
     getReleaseCover,
     getRelease,
-    getReleases,
     getReleaseMediaFiles,
     getReleaseDir,
     updateRelease
