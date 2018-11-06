@@ -71,15 +71,18 @@ function createDataProvider(musicDir) {
                mediaFilesPaths
                  .sort()
                  .map((filePath) => parseMediaFile(filePath))
-             ).then((metadata) => {
-               mediaMap.set(
-                 hash,
-                 metadata.map((item, index) => Object.assign({}, item, {
-                   path: mediaFilesPaths[index]
-                 }))
-               );
-               resolve(mediaMap.get(hash));
-             });
+             ).then(
+               (metadata) => {
+                 mediaMap.set(
+                   hash,
+                   metadata.map((item, index) => Object.assign({}, item, {
+                     path: mediaFilesPaths[index]
+                   }))
+                 );
+                 resolve(mediaMap.get(hash));
+               },
+               () => []
+              );
            });
        } else {
          reject();
