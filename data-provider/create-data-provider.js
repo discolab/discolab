@@ -65,8 +65,9 @@ function createDataProvider(musicDir) {
        if (mediaFiles && mediaFiles.length) {
          resolve(mediaFiles);
        } else if (releaseDir) {
-         findFiles('**/@(*.flac|*.mp3)', releaseDir)
+         findFiles('**/@(*.flac|*.m4a|*.mp3)', releaseDir)
            .then((mediaFilesPaths) => {
+             log(`found ${mediaFilesPaths.length} media files in ${releaseDir}`);
              return Promise.all(
                mediaFilesPaths
                  .sort()
