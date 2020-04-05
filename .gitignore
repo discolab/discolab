@@ -4,3 +4,5 @@ node_modules
 bin/test
 .DS_Store
 .idea/*
+package-lock.json
+fixtures/*
